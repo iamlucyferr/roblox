@@ -1,103 +1,126 @@
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 -- Create GUI
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "OmniDashboard"
+ScreenGui.Name = "Omni_Control_v4"
 ScreenGui.ResetOnSpawn = false
-ScreenGui.Parent = game:GetService("CoreGui") -- Using CoreGui for persistence
+-- Attempting CoreGui for persistence, falls back to PlayerGui
+local success, err = pcall(function() ScreenGui.Parent = game:GetService("CoreGui") end)
+if not success then ScreenGui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui") end
 
--- Main Container
+-- Main Frame
 local MainFrame = Instance.new("Frame")
-MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 300, 0, 450)
-MainFrame.Position = UDim2.new(0.5, -150, 0.5, -225)
-MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+MainFrame.Size = UDim2.new(0, 320, 0, 480)
+MainFrame.Position = UDim2.new(0.5, -160, 0.5, -240)
+MainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 MainFrame.BorderSizePixel = 0
 MainFrame.Parent = ScreenGui
 
--- Visual Styling (Glow & Glassmorphism)
-local UICorner = Instance.new("UICorner")
-UICorner.CornerRadius = UDim.new(0, 10)
-UICorner.Parent = MainFrame
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 12)
+MainCorner.Parent = MainFrame
 
-local UIStroke = Instance.new("UIStroke")
-UIStroke.Color = Color3.fromHex("#30D6FF") -- Neon Cyan Glow
-UIStroke.Thickness = 2
-UIStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-UIStroke.Parent = MainFrame
+local Glow = Instance.new("UIStroke")
+Glow.Color = Color3.fromHex("#30D6FF")
+Glow.Thickness = 2
+Glow.Parent = MainFrame
 
 -- Header
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, 0, 0, 50)
 Title.BackgroundTransparency = 1
-Title.Text = "PLAYER MONITOR"
+Title.Text = "CONTROL PANEL"
 Title.TextColor3 = Color3.fromHex("#30D6FF")
 Title.Font = Enum.Font.GothamBold
-Title.TextSize = 20
+Title.TextSize = 18
 Title.Parent = MainFrame
 
--- List Container
-local ScrollingFrame = Instance.new("ScrollingFrame")
-ScrollingFrame.Size = UDim2.new(1, -20, 1, -70)
-ScrollingFrame.Position = UDim2.new(0, 10, 0, 60)
-ScrollingFrame.BackgroundTransparency = 1
-ScrollingFrame.ScrollBarThickness = 2
-ScrollingFrame.ScrollBarImageColor3 = Color3.fromHex("#30D6FF")
-ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
-ScrollingFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
-ScrollingFrame.Parent = MainFrame
+--- [ SET CASH SECTION ] ---
+local CashFrame = Instance.new("Frame")
+CashFrame.Size = UDim2.new(1, -30, 0, 60)
+CashFrame.Position = UDim2.new(0, 15, 0, 60)
+CashFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+CashFrame.Parent = MainFrame
 
-local UIListLayout = Instance.new("UIListLayout")
-UIListLayout.Padding = UDim.new(0, 8)
-UIListLayout.Parent = ScrollingFrame
+Instance.new("UICorner", CashFrame).CornerRadius = UDim.new(0, 8)
 
--- Function to add players
-local function createPlayerEntry(player)
-    local Frame = Instance.new("Frame")
-    Frame.Name = player.Name
-    Frame.Size = UDim2.new(1, -5, 0, 40)
-    Frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-    Frame.BorderSizePixel = 0
-    Frame.Parent = ScrollingFrame
+local CashInput = Instance.new("TextBox")
+CashInput.Size = UDim2.new(0.6, -10, 0, 30)
+CashInput.Position = UDim2.new(0, 10, 0.5, -15)
+CashInput.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+CashInput.Text = ""
+CashInput.PlaceholderText = "Enter Amount..."
+CashInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+CashInput.Font = Enum.Font.Gotham
+CashInput.TextSize = 14
+CashInput.Parent = CashFrame
+Instance.new("UICorner", CashInput)
 
-    local Corner = Instance.new("UICorner")
-    Corner.CornerRadius = UDim.new(0, 6)
-    Corner.Parent = Frame
+local SetBtn = Instance.new("TextButton")
+SetBtn.Size = UDim2.new(0.4, -15, 0, 30)
+SetBtn.Position = UDim2.new(0.6, 5, 0.5, -15)
+SetBtn.BackgroundColor3 = Color3.fromHex("#30D6FF")
+SetBtn.Text = "SET CASH"
+SetBtn.Font = Enum.Font.GothamBold
+SetBtn.TextColor3 = Color3.fromRGB(0, 0, 0)
+SetBtn.TextSize = 12
+SetBtn.Parent = CashFrame
+Instance.new("UICorner", SetBtn)
 
-    local NameLabel = Instance.new("TextLabel")
-    NameLabel.Size = UDim2.new(1, -10, 1, 0)
-    NameLabel.Position = UDim2.new(0, 10, 0, 0)
-    NameLabel.BackgroundTransparency = 1
-    NameLabel.Text = player.DisplayName .. " (@" .. player.Name .. ")"
-    NameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    NameLabel.TextXAlignment = Enum.TextXAlignment.Left
-    NameLabel.Font = Enum.Font.Gotham
-    NameLabel.TextSize = 14
-    NameLabel.Parent = Frame
-end
+--- [ PLAYER LIST SECTION ] ---
+local ListContainer = Instance.new("ScrollingFrame")
+ListContainer.Size = UDim2.new(1, -30, 1, -150)
+ListContainer.Position = UDim2.new(0, 15, 0, 135)
+ListContainer.BackgroundTransparency = 1
+ListContainer.ScrollBarThickness = 2
+ListContainer.ScrollBarImageColor3 = Color3.fromHex("#30D6FF")
+ListContainer.AutomaticCanvasSize = Enum.AutomaticSize.Y
+ListContainer.Parent = MainFrame
 
--- Refresh Logic
-local function refresh()
-    for _, child in pairs(ScrollingFrame:GetChildren()) do
-        if child:IsA("Frame") then child:Destroy() end
-    end
-    for _, p in pairs(Players:GetPlayers()) do
-        createPlayerEntry(p)
-    end
-end
+local Layout = Instance.new("UIListLayout", ListContainer)
+Layout.Padding = UDim.new(0, 5)
 
--- Toggle Visibility
-UserInputService.InputBegan:Connect(function(input, gpe)
-    if not gpe and input.KeyCode == Enum.KeyCode.RightControl then
-        MainFrame.Visible = not MainFrame.Visible
+-- Logic: Set Cash
+SetBtn.MouseButton1Click:Connect(function()
+    local val = tonumber(CashInput.Text)
+    if val then
+        -- Logic: Search for common "Cash" leaderstat names
+        local stats = Players.LocalPlayer:FindFirstChild("leaderstats")
+        if stats then
+            local cashObj = stats:FindFirstChild("Cash") or stats:FindFirstChild("Money") or stats:FindFirstChild("Coins")
+            if cashObj then
+                cashObj.Value = val
+                print("Cash updated to: " .. val)
+            end
+        end
     end
 end)
 
--- Events
-Players.PlayerAdded:Connect(refresh)
-Players.PlayerRemoving:Connect(refresh)
-refresh()
+-- Logic: Update Player List
+local function updateList()
+    for _, c in pairs(ListContainer:GetChildren()) do if c:IsA("TextLabel") then c:Destroy() end end
+    for _, p in pairs(Players:GetPlayers()) do
+        local pLabel = Instance.new("TextLabel")
+        pLabel.Size = UDim2.new(1, 0, 0, 30)
+        pLabel.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+        pLabel.Text = "  " .. p.DisplayName .. " (@" .. p.Name .. ")"
+        pLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+        pLabel.TextXAlignment = Enum.TextXAlignment.Left
+        pLabel.Font = Enum.Font.Gotham
+        pLabel.Parent = ListContainer
+        Instance.new("UICorner", pLabel)
+    end
+end
 
-print("GUI Loaded. Press RightControl to Toggle.")
+Players.PlayerAdded:Connect(updateList)
+Players.PlayerRemoving:Connect(updateList)
+updateList()
+
+-- Toggle UI (RightControl)
+UserInputService.InputBegan:Connect(function(io, gpe)
+    if not gpe and io.KeyCode == Enum.KeyCode.RightControl then
+        MainFrame.Visible = not MainFrame.Visible
+    end
+end)
